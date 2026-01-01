@@ -18,10 +18,11 @@ import (
 // Ticket represents a kanban ticket.
 type Ticket struct {
 	// Metadata from frontmatter
-	Title   string    `yaml:"title"`
-	Tags    []string  `yaml:"tags,omitempty"`
-	Created time.Time `yaml:"created"`
-	Updated time.Time `yaml:"updated"`
+	Title         string    `yaml:"title"`
+	Tags          []string  `yaml:"tags,omitempty"`
+	Created       time.Time `yaml:"created"`
+	Updated       time.Time `yaml:"updated"`
+	AgentFeedback string    `yaml:"agent_feedback,omitempty"`
 
 	// Content is the markdown body (excluding frontmatter)
 	Content string `yaml:"-"`
@@ -134,15 +135,17 @@ func (t *Ticket) ToMarkdown() []byte {
 	buf.WriteString("---\n")
 
 	fm := struct {
-		Title   string    `yaml:"title"`
-		Tags    []string  `yaml:"tags,omitempty"`
-		Created time.Time `yaml:"created"`
-		Updated time.Time `yaml:"updated"`
+		Title         string    `yaml:"title"`
+		Tags          []string  `yaml:"tags,omitempty"`
+		Created       time.Time `yaml:"created"`
+		Updated       time.Time `yaml:"updated"`
+		AgentFeedback string    `yaml:"agent_feedback,omitempty"`
 	}{
-		Title:   t.Title,
-		Tags:    t.Tags,
-		Created: t.Created,
-		Updated: t.Updated,
+		Title:         t.Title,
+		Tags:          t.Tags,
+		Created:       t.Created,
+		Updated:       t.Updated,
+		AgentFeedback: t.AgentFeedback,
 	}
 
 	fmData, _ := yaml.Marshal(fm)

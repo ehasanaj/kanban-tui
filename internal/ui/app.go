@@ -29,6 +29,7 @@ const (
 	ViewConfirmDelete
 	ViewHelp
 	ViewSearch
+	ViewAgentFeedback // Fullscreen agent feedback view
 )
 
 // Editor modes for the ticket editor
@@ -307,6 +308,8 @@ func (m *Model) handleKeyPress(msg tea.KeyMsg) tea.Cmd {
 		return m.handleHelpKeys(msg)
 	case ViewSearch:
 		return m.handleSearchKeys(msg)
+	case ViewAgentFeedback:
+		return m.handleAgentFeedbackKeys(msg)
 	}
 
 	return nil
@@ -409,6 +412,12 @@ func (m *Model) handleTicketEditorKeys(msg tea.KeyMsg) tea.Cmd {
 			m.editorFocus = 0
 			m.titleInput.Focus()
 			return textinput.Blink
+		case "f":
+			// Open fullscreen agent feedback view
+			if m.editingTicket != nil && m.editingTicket.AgentFeedback != "" {
+				m.viewMode = ViewAgentFeedback
+			}
+			return nil
 		}
 		return nil
 	}
@@ -519,6 +528,15 @@ func (m *Model) handleSearchKeys(msg tea.KeyMsg) tea.Cmd {
 		m.searchInput.Blur()
 	}
 
+	return nil
+}
+
+// handleAgentFeedbackKeys handles keys in agent feedback fullscreen view.
+func (m *Model) handleAgentFeedbackKeys(msg tea.KeyMsg) tea.Cmd {
+	switch msg.String() {
+	case "esc", "q", "f":
+		m.viewMode = ViewTicket
+	}
 	return nil
 }
 
@@ -737,6 +755,8 @@ func (m *Model) View() string {
 		return m.renderMoveScreen()
 	case ViewSearch:
 		return m.renderSearchScreen()
+	case ViewAgentFeedback:
+		return m.renderAgentFeedbackScreen()
 	default:
 		return m.renderBoard()
 	}
@@ -1031,6 +1051,29 @@ func (m *Model) renderTicketEditor() string {
 	}
 	b.WriteString("\n\n")
 
+	// Agent feedback preview (view mode only, when feedback exists)
+	if isViewMode && m.editingTicket != nil && m.editingTicket.AgentFeedback != "" {
+		feedbackLabel := m.styles.ModalTitle.Copy().Foreground(GruvboxBlue).Render("Agent Feedback")
+		b.WriteString(feedbackLabel)
+		b.WriteString("\n")
+
+		// Show truncated preview (first 100 chars or 2 lines)
+		feedback := m.editingTicket.AgentFeedback
+		previewLines := strings.SplitN(feedback, "\n", 3)
+		preview := strings.Join(previewLines[:min(len(previewLines), 2)], "\n")
+		if len(preview) > 100 {
+			preview = preview[:100] + "..."
+		} else if len(previewLines) > 2 {
+			preview += "..."
+		}
+
+		feedbackStyle := m.styles.Input.Width(contentWidth).Foreground(GruvboxBlue)
+		b.WriteString(feedbackStyle.Render(preview))
+		b.WriteString("\n")
+		b.WriteString(m.styles.HelpDesc.Render("Press 'f' to view full feedback"))
+		b.WriteString("\n\n")
+	}
+
 	// Status message if any
 	if m.statusMessage != "" && time.Now().Before(m.statusTimeout) {
 		b.WriteString(m.styles.StatusMessage.Render(m.statusMessage))
@@ -1043,6 +1086,14 @@ func (m *Model) renderTicketEditor() string {
 		helpKeys = []struct{ key, desc string }{
 			{"e", "edit"},
 			{"Esc", "back"},
+		}
+		// Show feedback shortcut only if agent feedback exists
+		if m.editingTicket != nil && m.editingTicket.AgentFeedback != "" {
+			helpKeys = []struct{ key, desc string }{
+				{"e", "edit"},
+				{"f", "feedback"},
+				{"Esc", "back"},
+			}
 		}
 	} else {
 		helpKeys = []struct{ key, desc string }{
@@ -1133,6 +1184,74 @@ func (m *Model) renderMoveScreen() string {
 func (m *Model) renderSearchScreen() string {
 	modal := m.renderSearchModal()
 	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, modal)
+}
+
+// renderAgentFeedbackScreen renders the agent feedback in fullscreen.
+func (m *Model) renderAgentFeedbackScreen() string {
+	var b strings.Builder
+
+	// Calculate content width
+	contentWidth := m.width - 8
+	if contentWidth > 100 {
+		contentWidth = 100
+	}
+	if contentWidth < 40 {
+		contentWidth = 40
+	}
+
+	// Header
+	header := m.styles.Header.Width(contentWidth).Render("  Agent Feedback")
+	b.WriteString(header)
+	b.WriteString("\n\n")
+
+	// Ticket title for context
+	if m.editingTicket != nil {
+		titleLabel := m.styles.HelpDesc.Render("Ticket: ")
+		titleText := m.styles.TicketTitle.Render(m.editingTicket.Title)
+		b.WriteString(titleLabel)
+		b.WriteString(titleText)
+		b.WriteString("\n\n")
+	}
+
+	// Feedback content
+	feedbackLabel := m.styles.ModalTitle.Render("Feedback from AI Agent")
+	b.WriteString(feedbackLabel)
+	b.WriteString("\n\n")
+
+	feedback := ""
+	if m.editingTicket != nil {
+		feedback = m.editingTicket.AgentFeedback
+	}
+	if feedback == "" {
+		feedback = "(no agent feedback available)"
+	}
+
+	// Calculate available height for feedback content
+	feedbackHeight := m.height - 14
+	if feedbackHeight < 5 {
+		feedbackHeight = 5
+	}
+
+	feedbackStyle := m.styles.Input.Width(contentWidth).Height(feedbackHeight)
+	b.WriteString(feedbackStyle.Render(feedback))
+	b.WriteString("\n\n")
+
+	// Help bar
+	helpKeys := []struct{ key, desc string }{
+		{"Esc/f", "back"},
+	}
+
+	var parts []string
+	for _, k := range helpKeys {
+		key := m.styles.HelpKey.Render(k.key)
+		desc := m.styles.HelpDesc.Render(k.desc)
+		parts = append(parts, fmt.Sprintf("%s %s", key, desc))
+	}
+
+	helpText := strings.Join(parts, "    ")
+	b.WriteString(m.styles.HelpBar.Width(contentWidth).Render(helpText))
+
+	return m.styles.App.Render(b.String())
 }
 
 // renderHelpBar renders the always-visible help bar.
