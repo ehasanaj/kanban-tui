@@ -335,8 +335,8 @@ func (m *Model) handleBoardKeys(msg tea.KeyMsg) tea.Cmd {
 		}
 
 	case "j", "down":
-		col := m.columns[m.activeColumn]
-		if m.activeTicket < len(col.Tickets)-1 {
+		tickets := m.getFilteredTickets(m.activeColumn)
+		if m.activeTicket < len(tickets)-1 {
 			m.activeTicket++
 		}
 
@@ -526,10 +526,12 @@ func (m *Model) handleSearchKeys(msg tea.KeyMsg) tea.Cmd {
 	case "esc":
 		m.viewMode = ViewBoard
 		m.searchQuery = ""
+		m.activeTicket = 0 // Reset selection when clearing search
 		m.searchInput.Blur()
 
 	case "enter":
 		m.searchQuery = m.searchInput.Value()
+		m.activeTicket = 0 // Reset selection for filtered results
 		m.viewMode = ViewBoard
 		m.searchInput.Blur()
 	}
@@ -546,21 +548,34 @@ func (m *Model) handleAgentFeedbackKeys(msg tea.KeyMsg) tea.Cmd {
 	return nil
 }
 
+// getFilteredTickets returns tickets for a column, filtered by search query if active.
+func (m *Model) getFilteredTickets(colIndex int) []*models.Ticket {
+	if colIndex >= len(m.columns) {
+		return nil
+	}
+	tickets := m.columns[colIndex].Tickets
+	if m.searchQuery != "" {
+		tickets = m.filterTickets(tickets)
+	}
+	return tickets
+}
+
 // hasSelectedTicket returns true if there's a valid ticket selected.
 func (m *Model) hasSelectedTicket() bool {
 	if m.activeColumn >= len(m.columns) {
 		return false
 	}
-	col := m.columns[m.activeColumn]
-	return m.activeTicket < len(col.Tickets)
+	tickets := m.getFilteredTickets(m.activeColumn)
+	return m.activeTicket < len(tickets)
 }
 
 // getSelectedTicket returns the currently selected ticket.
 func (m *Model) getSelectedTicket() *models.Ticket {
-	if !m.hasSelectedTicket() {
+	tickets := m.getFilteredTickets(m.activeColumn)
+	if m.activeTicket >= len(tickets) {
 		return nil
 	}
-	return m.columns[m.activeColumn].Tickets[m.activeTicket]
+	return tickets[m.activeTicket]
 }
 
 // parseTagsInput parses the comma-separated tags input into a slice.
@@ -862,19 +877,19 @@ func (m *Model) renderBoard() string {
 func (m *Model) renderColumn(col ColumnData, colIndex, width int, isActive bool) string {
 	var b strings.Builder
 
-	// Column header with color
-	headerColor := GetColumnColor(col.Config.Dir)
-	headerStyle := m.styles.ColumnHeader.Copy().Background(headerColor)
-	count := m.styles.ColumnCount.Render(fmt.Sprintf("(%d)", len(col.Tickets)))
-	header := headerStyle.Render(col.Config.Name) + count
-	b.WriteString(header)
-	b.WriteString("\n")
-
 	// Filter tickets if searching
 	tickets := col.Tickets
 	if m.searchQuery != "" {
 		tickets = m.filterTickets(tickets)
 	}
+
+	// Column header with color (show filtered count when searching)
+	headerColor := GetColumnColor(col.Config.Dir)
+	headerStyle := m.styles.ColumnHeader.Copy().Background(headerColor)
+	count := m.styles.ColumnCount.Render(fmt.Sprintf("(%d)", len(tickets)))
+	header := headerStyle.Render(col.Config.Name) + count
+	b.WriteString(header)
+	b.WriteString("\n")
 
 	// Render tickets
 	maxTickets := (m.height - 12) / 4
@@ -942,8 +957,7 @@ func (m *Model) filterTickets(tickets []*models.Ticket) []*models.Ticket {
 	var filtered []*models.Ticket
 
 	for _, t := range tickets {
-		if strings.Contains(strings.ToLower(t.Title), query) ||
-			strings.Contains(strings.ToLower(t.Content), query) {
+		if strings.Contains(strings.ToLower(t.Title), query) {
 			filtered = append(filtered, t)
 		}
 	}
@@ -1284,10 +1298,7 @@ func (m *Model) renderAgentFeedbackScreen() string {
 	}
 
 	// Calculate available height for feedback content
-	feedbackHeight := m.height - 14
-	if feedbackHeight < 5 {
-		feedbackHeight = 5
-	}
+	feedbackHeight := max(m.height-14, 5)
 
 	feedbackStyle := m.styles.Input.Width(contentWidth).Height(feedbackHeight)
 	b.WriteString(feedbackStyle.Render(feedback))
@@ -1371,4 +1382,3 @@ Press Esc or ? to close this help
 `
 	return m.styles.App.Render(help)
 }
-
