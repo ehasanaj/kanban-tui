@@ -24,7 +24,7 @@ go build -o kanban ./cmd/kanban
 ### Go Install
 
 ```bash
-go install github.com/user/kanban-tui/cmd/kanban@latest
+go install github.com/ehasanaj/kanban-tui/cmd/kanban@latest
 ```
 
 ## Quick Start
