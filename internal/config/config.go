@@ -49,13 +49,18 @@ func DefaultConfig() *Config {
 }
 
 // Load reads configuration from a YAML file.
-// If the file doesn't exist, it returns the default configuration.
+// If the file doesn't exist, it creates a default configuration file.
 func Load(path string) (*Config, error) {
 	cfg := DefaultConfig()
 
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
+			// Create config file with defaults on first run
+			if saveErr := cfg.Save(path); saveErr != nil {
+				// Non-fatal: continue with defaults if we can't save
+				return cfg, nil
+			}
 			return cfg, nil
 		}
 		return nil, err
