@@ -1262,13 +1262,7 @@ func (m *Model) renderAgentFeedbackScreen() string {
 	var b strings.Builder
 
 	// Calculate content width
-	contentWidth := m.width - 8
-	if contentWidth > 100 {
-		contentWidth = 100
-	}
-	if contentWidth < 40 {
-		contentWidth = 40
-	}
+	contentWidth := max(min(m.width-8, 100), 40)
 
 	// Header
 	header := m.styles.Header.Width(contentWidth).Render("  Agent Feedback")
