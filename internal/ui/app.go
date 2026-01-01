@@ -238,6 +238,9 @@ func (m *Model) watcherCmd() tea.Cmd {
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
+	// Capture viewMode before handling keys to prevent trigger key from being passed to inputs
+	prevViewMode := m.viewMode
+
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		cmd := m.handleKeyPress(msg)
@@ -262,8 +265,8 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.statusMessage = ""
 	}
 
-	// Update text inputs if in input mode (create/edit modes only, not view)
-	if m.viewMode == ViewNewTicket || m.viewMode == ViewEditTicket {
+	// Update text inputs only if we were already in input mode (not just switched to it)
+	if prevViewMode == ViewNewTicket || prevViewMode == ViewEditTicket {
 		var cmd tea.Cmd
 		switch m.editorFocus {
 		case 0:
@@ -276,7 +279,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, cmd)
 	}
 
-	if m.viewMode == ViewSearch {
+	if prevViewMode == ViewSearch {
 		var cmd tea.Cmd
 		m.searchInput, cmd = m.searchInput.Update(msg)
 		cmds = append(cmds, cmd)
