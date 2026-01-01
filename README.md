@@ -21,7 +21,7 @@ cd kanban-tui
 go build -o kanban ./cmd/kanban
 ```
 
-### Go Install
+### Go Install (not setup yet)
 
 ```bash
 go install github.com/ehasanaj/kanban-tui/cmd/kanban@latest
