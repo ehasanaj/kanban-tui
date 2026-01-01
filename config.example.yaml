@@ -1,0 +1,31 @@
+# Kanban TUI Configuration
+# Copy this file to ~/.config/kanban-tui/config.yaml
+
+# Root directory for kanban data
+# Default: ~/.kanban
+kanban_dir: ~/.kanban
+
+# Column definitions
+# Each column has a name (display), dir (directory name), and optional color
+columns:
+  - name: To Do
+    dir: todo
+    color: "#f87171"    # Red
+  - name: Doing
+    dir: doing
+    color: "#fbbf24"    # Yellow
+  - name: Done
+    dir: done
+    color: "#4ade80"    # Green
+
+# Add custom columns as needed:
+#  - name: Backlog
+#    dir: backlog
+#    color: "#94a3b8"
+#  - name: Review
+#    dir: review
+#    color: "#60a5fa"
+
+# External editor for editing tickets
+# Default: $EDITOR environment variable, or vim
+editor: "nvim"
