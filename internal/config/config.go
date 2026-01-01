@@ -23,6 +23,10 @@ type Config struct {
 	Columns []Column `yaml:"columns"`
 	// Editor is the external editor command (defaults to $EDITOR)
 	Editor string `yaml:"editor,omitempty"`
+	// SingleTicketPrompt is the template for copying a single ticket's agent prompt
+	SingleTicketPrompt string `yaml:"single_ticket_prompt,omitempty"`
+	// BatchTicketPrompt is the template for copying all todo tickets' agent prompt
+	BatchTicketPrompt string `yaml:"batch_ticket_prompt,omitempty"`
 }
 
 // DefaultConfig returns the default configuration.
@@ -38,7 +42,9 @@ func DefaultConfig() *Config {
 			{Name: "Doing", Dir: "doing", Color: "#fbbf24"},
 			{Name: "Done", Dir: "done", Color: "#4ade80"},
 		},
-		Editor: os.Getenv("EDITOR"),
+		Editor:             os.Getenv("EDITOR"),
+		SingleTicketPrompt: DefaultSingleTicketPrompt,
+		BatchTicketPrompt:  DefaultBatchTicketPrompt,
 	}
 }
 
@@ -68,6 +74,12 @@ func Load(path string) (*Config, error) {
 	}
 	if cfg.Editor == "" {
 		cfg.Editor = os.Getenv("EDITOR")
+	}
+	if cfg.SingleTicketPrompt == "" {
+		cfg.SingleTicketPrompt = DefaultSingleTicketPrompt
+	}
+	if cfg.BatchTicketPrompt == "" {
+		cfg.BatchTicketPrompt = DefaultBatchTicketPrompt
 	}
 
 	return cfg, nil

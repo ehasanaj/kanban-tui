@@ -391,6 +391,12 @@ func (m *Model) handleBoardKeys(msg tea.KeyMsg) tea.Cmd {
 	case "r":
 		m.loadAllTickets()
 		m.setStatus("Refreshed")
+
+	case "p":
+		return m.copySelectedTicketPrompt()
+
+	case "P":
+		return m.copyTodoTicketsPrompt()
 	}
 
 	return nil
@@ -736,6 +742,57 @@ func (m *Model) moveSelectedTicket() tea.Cmd {
 func (m *Model) setStatus(msg string) {
 	m.statusMessage = msg
 	m.statusTimeout = time.Now().Add(3 * time.Second)
+}
+
+// copySelectedTicketPrompt copies the prompt for the selected ticket to clipboard.
+func (m *Model) copySelectedTicketPrompt() tea.Cmd {
+	ticket := m.getSelectedTicket()
+	if ticket == nil {
+		m.setStatus("No ticket selected")
+		return nil
+	}
+
+	prompt, err := m.renderSingleTicketPrompt(ticket)
+	if err != nil {
+		m.setStatus(fmt.Sprintf("Error: %v", err))
+		return nil
+	}
+
+	if err := copyToClipboard(prompt); err != nil {
+		m.setStatus(fmt.Sprintf("Clipboard error: %v", err))
+		return nil
+	}
+
+	m.setStatus(fmt.Sprintf("Copied prompt for: %s", ticket.ShortTitle(30)))
+	return nil
+}
+
+// copyTodoTicketsPrompt copies prompts for all tickets in the first column.
+func (m *Model) copyTodoTicketsPrompt() tea.Cmd {
+	if len(m.columns) == 0 {
+		m.setStatus("No columns configured")
+		return nil
+	}
+
+	todoColumn := m.columns[0]
+	if len(todoColumn.Tickets) == 0 {
+		m.setStatus("No tickets in todo column")
+		return nil
+	}
+
+	prompt, err := m.renderBatchTicketPrompt(todoColumn.Tickets)
+	if err != nil {
+		m.setStatus(fmt.Sprintf("Error: %v", err))
+		return nil
+	}
+
+	if err := copyToClipboard(prompt); err != nil {
+		m.setStatus(fmt.Sprintf("Clipboard error: %v", err))
+		return nil
+	}
+
+	m.setStatus(fmt.Sprintf("Copied %d todo ticket(s) to clipboard", len(todoColumn.Tickets)))
+	return nil
 }
 
 // View renders the UI.
@@ -1263,6 +1320,8 @@ func (m *Model) renderHelpBar() string {
 		{"e", "edit"},
 		{"d", "delete"},
 		{"m", "move"},
+		{"p", "copy ticket prompt"},
+		{"P", "copy all todo prompts"},
 		{"Enter", "view"},
 		{"/", "search"},
 		{"?", "help"},
@@ -1297,6 +1356,10 @@ Actions
   d          Delete selected ticket
   m          Move ticket to another column
   Enter      View ticket details
+
+Agent Integration
+  p          Copy AI agent prompt for selected ticket to clipboard
+  P          Copy AI agent prompt for all todo tickets to clipboard
 
 Other
   /          Search tickets
