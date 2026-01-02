@@ -23,8 +23,6 @@ cd kanban-tui
 go build -o kanban ./cmd/kanban
 ```
 
-```
-
 ## Quick Start
 
 ```bash
@@ -135,7 +133,7 @@ columns:
 editor: nvim
 
 # AI prompt templates (Go text/template syntax)
-# Available variables: .TicketPath, .DoingPath, .DonePath, .Title, .Tags, .Content
+# Available variables: .TicketPath, .DoingPath, .DonePath, .AgentMdPath, .Title, .Tags, .Content
 single_ticket_prompt: |
   Implement the task described in this ticket: @{{.TicketPath}}
   ...
@@ -152,7 +150,9 @@ batch_ticket_prompt: |
 ## Directory Structure
 
 ```
-~/.kanban/
+.kanban/
+├── AGENT.md        # Auto-generated instructions for AI agents
+├── config.yaml     # Configuration file
 ├── todo/
 │   ├── 2025-01-01-implement-auth.md
 │   └── 2025-01-02-add-logging.md
@@ -172,6 +172,16 @@ This kanban board is designed to work with AI agents. Agents can:
 4. **Read tickets**: Parse markdown files to understand tasks
 
 The TUI automatically detects file changes and updates in real-time.
+
+### AGENT.md
+
+An `AGENT.md` file is automatically created in the `.kanban/` directory on first run. This file contains complete instructions for AI agents on how to interact with the kanban system, including:
+- Directory structure and ticket format
+- All YAML frontmatter fields
+- How to create, move, and update tickets
+- Workflow guidelines
+
+The default prompts (`p`/`P`) instruct agents to read this file first.
 
 ### Prompt Copy Feature
 

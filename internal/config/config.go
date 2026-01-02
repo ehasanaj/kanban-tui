@@ -111,6 +111,14 @@ func (c *Config) EnsureDirectories() error {
 		return err
 	}
 
+	// Create AGENT.md if it doesn't exist
+	agentMdPath := filepath.Join(c.KanbanDir, "AGENT.md")
+	if _, err := os.Stat(agentMdPath); os.IsNotExist(err) {
+		if err := os.WriteFile(agentMdPath, []byte(DefaultAgentInstructions), 0644); err != nil {
+			return err
+		}
+	}
+
 	for _, col := range c.Columns {
 		colPath := filepath.Join(c.KanbanDir, col.Dir)
 		if err := os.MkdirAll(colPath, 0755); err != nil {

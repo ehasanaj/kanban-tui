@@ -37,3 +37,4 @@ config.yaml
 dist/
 
 .claude/
+.kanban/

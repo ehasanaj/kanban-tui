@@ -4,6 +4,8 @@ package config
 // DefaultSingleTicketPrompt is the default template for copying a single ticket prompt.
 const DefaultSingleTicketPrompt = `Implement the task described in this ticket: @{{.TicketPath}}
 
+First, read @{{.AgentMdPath}} to understand how to interact with this kanban system.
+
 ## Guidelines
 - First, read and understand the ticket requirements thoroughly
 - Plan your approach before writing code
@@ -24,6 +26,8 @@ const DefaultBatchTicketPrompt = `Implement the tasks described in the following
 {{range .Tickets}}
 - @{{.TicketPath}}
 {{- end}}
+
+First, read @{{.AgentMdPath}} to understand how to interact with this kanban system.
 
 ## Guidelines
 - Read and understand each ticket's requirements before starting

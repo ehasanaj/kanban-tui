@@ -13,17 +13,19 @@ import (
 
 // TicketPromptData holds data for single ticket template rendering.
 type TicketPromptData struct {
-	Title      string
-	Tags       string
-	Content    string
-	TicketPath string
-	DonePath   string
-	DoingPath  string
+	Title       string
+	Tags        string
+	Content     string
+	TicketPath  string
+	DonePath    string
+	DoingPath   string
+	AgentMdPath string
 }
 
 // BatchPromptData holds data for batch ticket template rendering.
 type BatchPromptData struct {
-	Tickets []TicketPromptData
+	Tickets     []TicketPromptData
+	AgentMdPath string
 }
 
 // buildTicketPromptData creates template data from a ticket.
@@ -39,14 +41,16 @@ func (m *Model) buildTicketPromptData(ticket *models.Ticket) TicketPromptData {
 	filename := filepath.Base(ticket.FilePath)
 	donePath := filepath.Join(".kanban", "done", filename)
 	doingPath := filepath.Join(".kanban", "doing", filename)
+	agentMdPath := filepath.Join(".kanban", "AGENT.md")
 
 	return TicketPromptData{
-		Title:      ticket.Title,
-		Tags:       strings.Join(ticket.Tags, ", "),
-		Content:    ticket.Content,
-		TicketPath: relativePath,
-		DonePath:   donePath,
-		DoingPath:  doingPath,
+		Title:       ticket.Title,
+		Tags:        strings.Join(ticket.Tags, ", "),
+		Content:     ticket.Content,
+		TicketPath:  relativePath,
+		DonePath:    donePath,
+		DoingPath:   doingPath,
+		AgentMdPath: agentMdPath,
 	}
 }
 
@@ -79,7 +83,11 @@ func (m *Model) renderBatchTicketPrompt(tickets []*models.Ticket) (string, error
 		ticketData = append(ticketData, m.buildTicketPromptData(t))
 	}
 
-	data := BatchPromptData{Tickets: ticketData}
+	agentMdPath := filepath.Join(".kanban", "AGENT.md")
+	data := BatchPromptData{
+		Tickets:     ticketData,
+		AgentMdPath: agentMdPath,
+	}
 
 	var buf bytes.Buffer
 	if err := tmpl.Execute(&buf, data); err != nil {
